@@ -21,7 +21,7 @@ function dbFileDecorator(fastify: FastifyInstance, _, done) {
     let [rangeStart, rangeEnd] = parseRangeHeader(this.request.headers.range);
     if (rangeStart >= rangeEnd)
       return this.code(416)
-        .header('Content-Range', `bytes */${size - 1}`)
+        .header('Content-Range', `bytes 0/${size - 1}`)
         .send();
     if (rangeEnd === Infinity) rangeEnd = size - 1;
 
