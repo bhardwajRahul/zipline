@@ -46,7 +46,7 @@ async function start() {
   logger.debug('Starting server');
 
   // plugins
-  server
+  await server
     .register(loggerPlugin)
     .register(configPlugin, config)
     .register(datasourcePlugin, datasource)
@@ -61,7 +61,7 @@ async function start() {
     .register(allPlugin);
 
   // decorators
-  server
+  await server
     .register(notFound)
     .register(postUrlDecorator)
     .register(postFileDecorator)
@@ -98,6 +98,16 @@ async function start() {
     }
 
     done();
+  });
+
+  server.setErrorHandler((error, request, reply) => {
+    console.error(error);
+
+    reply.status(500).send({
+      statusCode: 500,
+      error: 'Internal Server Error',
+      message: error.message,
+    });
   });
 
   server.get('/favicon.ico', async (_, reply) => {

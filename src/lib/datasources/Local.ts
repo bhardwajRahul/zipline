@@ -11,7 +11,7 @@ export class Local extends Datasource {
   }
 
   public async save(file: string, data: Buffer): Promise<void> {
-    await writeFile(join(this.path, file), data);
+    await writeFile(join(this.path, file), Uint8Array.from(data));
   }
 
   public async delete(file: string): Promise<void> {
@@ -26,12 +26,12 @@ export class Local extends Datasource {
     }
   }
 
-  public get(file: string, start: number = 0, end: number = Infinity): ReadStream {
+  public get(file: string): ReadStream {
     const full = join(this.path, file);
     if (!existsSync(full)) return null;
 
     try {
-      return createReadStream(full, { start, end });
+      return createReadStream(full);
     } catch (e) {
       return null;
     }
@@ -55,5 +55,12 @@ export class Local extends Datasource {
     }
 
     return size;
+  }
+
+  public async range(file: string, start: number, end: number): Promise<ReadStream> {
+    const path = join(this.path, file);
+    const readStream = createReadStream(path, { start, end });
+
+    return readStream;
   }
 }

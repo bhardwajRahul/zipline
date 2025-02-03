@@ -13,9 +13,7 @@ export default async function urlsRoute(this: FastifyInstance, req: FastifyReque
   });
   if (!url) return reply.notFound();
 
-  reply.redirect(url.destination);
-
-  reply.postUrl(url);
+  return await reply.redirect(url.destination);
 }
 
 export async function urlsRouteOnResponse(
@@ -24,7 +22,7 @@ export async function urlsRouteOnResponse(
   reply: FastifyReply,
   done: () => void,
 ) {
-  if (reply.statusCode === 200) {
+  if (reply.statusCode === 302) {
     const { id } = req.params as { id: string };
 
     const url = await this.prisma.url.findFirst({
@@ -32,8 +30,7 @@ export async function urlsRouteOnResponse(
         OR: [{ id }, { vanity: id }, { invisible: { invis: decodeURI(id) } }],
       },
     });
-
-    reply.postUrl(url);
+    await reply.postUrl(url);
   }
 
   done();
