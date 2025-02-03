@@ -1,5 +1,5 @@
 import { Datasource } from '.';
-import { Readable } from 'stream';
+import { PassThrough, Readable } from 'stream';
 import { ConfigS3Datasource } from 'lib/config/Config';
 import { BucketItemStat, Client } from 'minio';
 
@@ -24,7 +24,8 @@ export class S3 extends Datasource {
     await this.s3.putObject(
       this.config.bucket,
       file,
-      data,
+      new PassThrough().end(data),
+      data.byteLength,
       options ? { 'Content-Type': options.type } : undefined,
     );
   }
@@ -45,28 +46,12 @@ export class S3 extends Datasource {
     });
   }
 
-  public get(file: string, start: number = 0, end: number = Infinity): Promise<Readable> {
-    if (start === 0 && end === Infinity) {
-      return new Promise((res) => {
-        this.s3.getObject(this.config.bucket, file, (err, stream) => {
-          if (err) res(null);
-          else res(stream);
-        });
-      });
-    }
-
+  public get(file: string): Promise<Readable> {
     return new Promise((res) => {
-      this.s3.getPartialObject(
-        this.config.bucket,
-        file,
-        start,
-        // undefined means to read the rest of the file from the start (offset)
-        end === Infinity ? undefined : end,
-        (err, stream) => {
-          if (err) res(null);
-          else res(stream);
-        },
-      );
+      this.s3.getObject(this.config.bucket, file, (err, stream) => {
+        if (err) res(null);
+        else res(stream);
+      });
     });
   }
 
@@ -93,6 +78,17 @@ export class S3 extends Datasource {
       objects.on('end', (err) => {
         if (err) res(0);
         else res(size);
+      });
+    });
+  }
+
+  public async range(file: string, start: number, end: number): Promise<Readable> {
+    return new Promise((res) => {
+      this.s3.getPartialObject(this.config.bucket, file, start, end, (err, stream) => {
+        if (err) {
+          console.log(err);
+          res(null);
+        } else res(stream);
       });
     });
   }
